@@ -1,0 +1,67 @@
+import java.text.SimpleDateFormat
+
+plugins {
+    id "net.nemerosa.versioning" version "3.0.0"
+    id "java"
+}
+
+configurations {
+    bundleLib
+}
+
+group 'it.pleaseopen'
+version '1.0.0-SNAPSHOT'
+
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    keycloakVersion=project.properties["keycloakVersion"]
+    quarkusResteasyVersion=project.properties["quarkusResteasyVersion"]
+    prometheusVersion=project.properties["prometheusVersion"]
+}
+
+
+dependencies {
+    implementation group: 'io.micrometer', name: 'micrometer-core', version: '1.13.2'
+    implementation group: 'org.keycloak', name: 'keycloak-server-spi-private', version: keycloakVersion
+    implementation group: 'org.keycloak', name: 'keycloak-server-spi', version: keycloakVersion
+    implementation group: 'org.keycloak', name: 'keycloak-services', version: keycloakVersion
+    compileOnly group: 'io.quarkus.resteasy.reactive', name: 'resteasy-reactive', version: quarkusResteasyVersion
+    bundleLib group: 'io.prometheus', name: 'simpleclient_common', version: prometheusVersion
+    bundleLib group: 'io.prometheus', name: 'simpleclient_hotspot', version: prometheusVersion
+    bundleLib group: 'io.prometheus', name: 'simpleclient_pushgateway', version: prometheusVersion
+    configurations.implementation.extendsFrom(configurations.bundleLib)
+
+    testImplementation group: 'junit', name: 'junit', version: '4.13'
+    testImplementation group: 'uk.org.webcompere', name: 'system-stubs-junit4', version: '2.0.2'
+    testImplementation group: 'org.mockito', name: 'mockito-core', version: '5.4.0'
+    // required by 'system-stubs-junit4'
+    testImplementation group: 'org.mockito', name: 'mockito-inline', version: '5.2.0'
+
+    compileOnly 'org.apache.tomcat:tomcat-servlet-api:9.0.37'
+
+}
+
+jar {
+    from {
+        configurations.bundleLib.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    manifest {
+        attributes(
+            'Built-By'       : System.properties['user.name'],
+            'Build-Timestamp': new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date()),
+            'Build-Revision' : versioning.info.commit,
+            'Created-By'     : "Gradle ${gradle.gradleVersion}",
+            'Build-Jdk'      : "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']})",
+            'Build-OS'       : "${System.properties['os.name']} ${System.properties['os.arch']} ${System.properties['os.version']}",
+            'Version'        : "${gradle.rootProject.version}"
+        )
+    }
+}
