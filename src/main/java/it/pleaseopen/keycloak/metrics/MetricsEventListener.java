@@ -4,17 +4,15 @@ import org.jboss.logging.Logger;
 import org.keycloak.events.Event;
 import org.keycloak.events.EventListenerProvider;
 import org.keycloak.events.admin.AdminEvent;
-import org.keycloak.models.RealmProvider;
 
 public class MetricsEventListener implements EventListenerProvider {
 
     public final static String ID = "native-metrics-listener";
 
     private final static Logger logger = Logger.getLogger(MetricsEventListener.class);
-    private final RealmProvider realmProvider;
 
-    public MetricsEventListener(RealmProvider realmProvider) {
-        this.realmProvider = realmProvider;
+    public MetricsEventListener() {
+
     }
 
     @Override
@@ -23,37 +21,37 @@ public class MetricsEventListener implements EventListenerProvider {
 
         switch (event.getType()) {
             case LOGIN:
-                PrometheusExporter.instance().recordLogin(event, realmProvider);
+                PrometheusExporter.instance().recordLogin(event);
                 break;
             case CLIENT_LOGIN:
-                PrometheusExporter.instance().recordClientLogin(event, realmProvider);
+                PrometheusExporter.instance().recordClientLogin(event);
                 break;
             case REGISTER:
-                PrometheusExporter.instance().recordRegistration(event, realmProvider);
+                PrometheusExporter.instance().recordRegistration(event);
                 break;
             case REFRESH_TOKEN:
-                PrometheusExporter.instance().recordRefreshToken(event, realmProvider);
+                PrometheusExporter.instance().recordRefreshToken(event);
                 break;
             case CODE_TO_TOKEN:
-                PrometheusExporter.instance().recordCodeToToken(event, realmProvider);
+                PrometheusExporter.instance().recordCodeToToken(event);
                 break;
             case REGISTER_ERROR:
-                PrometheusExporter.instance().recordRegistrationError(event, realmProvider);
+                PrometheusExporter.instance().recordRegistrationError(event);
                 break;
             case LOGIN_ERROR:
-                PrometheusExporter.instance().recordLoginError(event, realmProvider);
+                PrometheusExporter.instance().recordLoginError(event);
                 break;
             case CLIENT_LOGIN_ERROR:
-                PrometheusExporter.instance().recordClientLoginError(event, realmProvider);
+                PrometheusExporter.instance().recordClientLoginError(event);
                 break;
             case REFRESH_TOKEN_ERROR:
-                PrometheusExporter.instance().recordRefreshTokenError(event, realmProvider);
+                PrometheusExporter.instance().recordRefreshTokenError(event);
                 break;
             case CODE_TO_TOKEN_ERROR:
-                PrometheusExporter.instance().recordCodeToTokenError(event, realmProvider);
+                PrometheusExporter.instance().recordCodeToTokenError(event);
                 break;
             default:
-                PrometheusExporter.instance().recordGenericEvent(event, realmProvider);
+                PrometheusExporter.instance().recordGenericEvent(event);
         }
     }
 
@@ -61,7 +59,7 @@ public class MetricsEventListener implements EventListenerProvider {
     public void onEvent(AdminEvent event, boolean includeRepresentation) {
         logAdminEventDetails(event);
 
-        PrometheusExporter.instance().recordGenericAdminEvent(event, realmProvider);
+        PrometheusExporter.instance().recordGenericAdminEvent(event);
     }
 
     private void logEventDetails(Event event) {

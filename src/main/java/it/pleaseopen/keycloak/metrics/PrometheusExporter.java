@@ -12,8 +12,6 @@ import org.keycloak.events.Event;
 import org.keycloak.events.EventType;
 import org.keycloak.events.admin.AdminEvent;
 import org.keycloak.events.admin.OperationType;
-import org.keycloak.models.RealmModel;
-import org.keycloak.models.RealmProvider;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -118,15 +116,14 @@ public final class PrometheusExporter {
      * Count generic user event
      *
      * @param event         User event
-     * @param realmProvider
      */
-    public void recordGenericEvent(final Event event, RealmProvider realmProvider) {
+    public void recordGenericEvent(final Event event) {
         final String counterName = buildCounterName(event.getType());
         if (counters.get(counterName) == null) {
-            logger.warnf("Counter for event type %s does not exist. Realm: %s", event.getType().name(), nullToEmpty(getRealmName(event.getRealmId(), realmProvider)));
+            logger.warnf("Counter for event type %s does not exist. Realm: %s", event.getType().name(), nullToEmpty(event.getRealmName()));
             return;
         }
-        counters.get(counterName).tags("realm",nullToEmpty(getRealmName(event.getRealmId(), realmProvider))).register(meterRegistry).increment();
+        counters.get(counterName).tags("realm",nullToEmpty(event.getRealmName())).register(meterRegistry).increment();
         //pushAsync();
     }
 
@@ -134,15 +131,14 @@ public final class PrometheusExporter {
      * Count generic admin event
      *
      * @param event         Admin event
-     * @param realmProvider
      */
-    public void recordGenericAdminEvent(final AdminEvent event, RealmProvider realmProvider) {
+    public void recordGenericAdminEvent(final AdminEvent event) {
         final String counterName = buildCounterName(event.getOperationType());
         if (counters.get(counterName) == null) {
             logger.warnf("Counter for admin event operation type %s does not exist. Resource type: %s, realm: %s", event.getOperationType().name(), event.getResourceType().name(), event.getRealmId());
             return;
         }
-        counters.get(counterName).tags("realm",nullToEmpty(getRealmName(event.getRealmId(), realmProvider)), "resource", event.getResourceType().name()).register(meterRegistry).increment();
+        counters.get(counterName).tags("realm",nullToEmpty(event.getRealmName()), "resource", event.getResourceType().name()).register(meterRegistry).increment();
 
         //pushAsync();
     }
@@ -151,12 +147,11 @@ public final class PrometheusExporter {
      * Increase the number of currently logged in users
      *
      * @param event         Login event
-     * @param realmProvider
      */
-    public void recordLogin(final Event event, RealmProvider realmProvider) {
+    public void recordLogin(final Event event) {
         final String provider = getIdentityProvider(event);
-        meterRegistry.counter(totalLoginsAttempts, "realm", nullToEmpty(getRealmName(event.getRealmId(), realmProvider)), "provider", provider, "client_id", nullToEmpty(event.getClientId())).increment();
-        meterRegistry.counter(totalLogins, "realm", nullToEmpty(getRealmName(event.getRealmId(), realmProvider)), "provider", provider, "client_id", nullToEmpty(event.getClientId())).increment();
+        meterRegistry.counter(totalLoginsAttempts, "realm", nullToEmpty(event.getRealmName()), "provider", provider, "client_id", nullToEmpty(event.getClientId())).increment();
+        meterRegistry.counter(totalLogins, "realm", nullToEmpty(event.getRealmName()), "provider", provider, "client_id", nullToEmpty(event.getClientId())).increment();
         //pushAsync();
     }
 
@@ -164,11 +159,10 @@ public final class PrometheusExporter {
      * Increase the number registered users
      *
      * @param event         Register event
-     * @param realmProvider
      */
-    public void recordRegistration(final Event event, RealmProvider realmProvider) {
+    public void recordRegistration(final Event event) {
         final String provider = getIdentityProvider(event);
-        meterRegistry.counter(totalRegistrations, "realm", nullToEmpty(getRealmName(event.getRealmId(), realmProvider)), "provider", provider, "client_id", nullToEmpty(event.getClientId())).increment();
+        meterRegistry.counter(totalRegistrations, "realm", nullToEmpty(event.getRealmName()), "provider", provider, "client_id", nullToEmpty(event.getClientId())).increment();
         //pushAsync();
     }
 
@@ -176,11 +170,10 @@ public final class PrometheusExporter {
      * Increase the number of failed registered users attemps
      *
      * @param event         RegisterError event
-     * @param realmProvider
      */
-    public void recordRegistrationError(final Event event, RealmProvider realmProvider) {
+    public void recordRegistrationError(final Event event) {
         final String provider = getIdentityProvider(event);
-        meterRegistry.counter(totalRegistrationsErrors, "realm", nullToEmpty(getRealmName(event.getRealmId(), realmProvider)), "provider", provider, "client_id", nullToEmpty(event.getClientId()), "error", nullToEmpty(event.getError())).increment();
+        meterRegistry.counter(totalRegistrationsErrors, "realm", nullToEmpty(event.getRealmName()), "provider", provider, "client_id", nullToEmpty(event.getClientId()), "error", nullToEmpty(event.getError())).increment();
         //pushAsync();
     }
 
@@ -188,13 +181,12 @@ public final class PrometheusExporter {
      * Increase the number of failed login attempts
      *
      * @param event         LoginError event
-     * @param realmProvider
      */
-    public void recordLoginError(final Event event, RealmProvider realmProvider) {
+    public void recordLoginError(final Event event) {
         final String provider = getIdentityProvider(event);
 
-        meterRegistry.counter(totalLoginsAttempts, "realm", nullToEmpty(getRealmName(event.getRealmId(), realmProvider)), "provider", provider, "client_id", nullToEmpty(event.getClientId())).increment();
-        meterRegistry.counter(totalFailedLoginAttempts, "realm", nullToEmpty(getRealmName(event.getRealmId(), realmProvider)), "provider", provider, "client_id", nullToEmpty(event.getClientId()), "error", nullToEmpty(event.getError())).increment();
+        meterRegistry.counter(totalLoginsAttempts, "realm", nullToEmpty(event.getRealmName()), "provider", provider, "client_id", nullToEmpty(event.getClientId())).increment();
+        meterRegistry.counter(totalFailedLoginAttempts, "realm", nullToEmpty(event.getRealmName()), "provider", provider, "client_id", nullToEmpty(event.getClientId()), "error", nullToEmpty(event.getError())).increment();
         //pushAsync();
     }
 
@@ -202,11 +194,10 @@ public final class PrometheusExporter {
      * Increase the number of currently client logged
      *
      * @param event         ClientLogin event
-     * @param realmProvider
      */
-    public void recordClientLogin(final Event event, RealmProvider realmProvider) {
+    public void recordClientLogin(final Event event) {
         final String provider = getIdentityProvider(event);
-        meterRegistry.counter(totalClientLogins, "realm",nullToEmpty(getRealmName(event.getRealmId(), realmProvider)), "provider", provider, "client_id", nullToEmpty(event.getClientId())).increment();
+        meterRegistry.counter(totalClientLogins, "realm",nullToEmpty(event.getRealmName()), "provider", provider, "client_id", nullToEmpty(event.getClientId())).increment();
         //pushAsync();
     }
 
@@ -214,11 +205,10 @@ public final class PrometheusExporter {
      * Increase the number of failed login attempts
      *
      * @param event         ClientLoginError event
-     * @param realmProvider
      */
-    public void recordClientLoginError(final Event event, RealmProvider realmProvider) {
+    public void recordClientLoginError(final Event event) {
         final String provider = getIdentityProvider(event);
-        meterRegistry.counter(totalFailedClientLoginAttempts, "realm",nullToEmpty(getRealmName(event.getRealmId(), realmProvider)), "provider", provider, "client_id", nullToEmpty(event.getClientId()), "error", nullToEmpty(event.getError())).increment();
+        meterRegistry.counter(totalFailedClientLoginAttempts, "realm",nullToEmpty(event.getRealmName()), "provider", provider, "client_id", nullToEmpty(event.getClientId()), "error", nullToEmpty(event.getError())).increment();
         //pushAsync();
     }
 
@@ -226,11 +216,10 @@ public final class PrometheusExporter {
      * Increase the number of refreshes tokens
      *
      * @param event         RefreshToken event
-     * @param realmProvider
      */
-    public void recordRefreshToken(final Event event, RealmProvider realmProvider) {
+    public void recordRefreshToken(final Event event) {
         final String provider = getIdentityProvider(event);
-        meterRegistry.counter(totalRefreshTokens, "realm", nullToEmpty(getRealmName(event.getRealmId(), realmProvider)), "provider", provider, "client_id", nullToEmpty(event.getClientId())).increment();
+        meterRegistry.counter(totalRefreshTokens, "realm", nullToEmpty(event.getRealmName()), "provider", provider, "client_id", nullToEmpty(event.getClientId())).increment();
         //pushAsync();
     }
 
@@ -238,11 +227,10 @@ public final class PrometheusExporter {
      * Increase the number of failed refreshes tokens attempts
      *
      * @param event         RefreshTokenError event
-     * @param realmProvider
      */
-    public void recordRefreshTokenError(final Event event, RealmProvider realmProvider) {
+    public void recordRefreshTokenError(final Event event) {
         final String provider = getIdentityProvider(event);
-        meterRegistry.counter(totalRefreshTokensErrors, "realm", nullToEmpty(getRealmName(event.getRealmId(), realmProvider)), "provider", provider, "client_id", nullToEmpty(event.getClientId()),  "error", nullToEmpty(event.getError())).increment();
+        meterRegistry.counter(totalRefreshTokensErrors, "realm", nullToEmpty(event.getRealmName()), "provider", provider, "client_id", nullToEmpty(event.getClientId()),  "error", nullToEmpty(event.getError())).increment();
         //pushAsync();
     }
 
@@ -250,11 +238,10 @@ public final class PrometheusExporter {
      * Increase the number of code to tokens
      *
      * @param event         CodeToToken event
-     * @param realmProvider
      */
-    public void recordCodeToToken(final Event event, RealmProvider realmProvider) {
+    public void recordCodeToToken(final Event event) {
         final String provider = getIdentityProvider(event);
-        meterRegistry.counter(totalCodeToTokens, "realm", nullToEmpty(getRealmName(event.getRealmId(), realmProvider)), "provider", provider, "client_id", nullToEmpty(event.getClientId())).increment();
+        meterRegistry.counter(totalCodeToTokens, "realm", nullToEmpty(event.getRealmName()), "provider", provider, "client_id", nullToEmpty(event.getClientId())).increment();
         //pushAsync();
     }
 
@@ -262,11 +249,10 @@ public final class PrometheusExporter {
      * Increase the number of failed code to tokens attempts
      *
      * @param event         CodeToTokenError event
-     * @param realmProvider
      */
-    public void recordCodeToTokenError(final Event event, RealmProvider realmProvider) {
+    public void recordCodeToTokenError(final Event event) {
         final String provider = getIdentityProvider(event);
-        meterRegistry.counter(totalCodeToTokensErrors, "realm", nullToEmpty(getRealmName(event.getRealmId(), realmProvider)), "provider", provider, "client_id", nullToEmpty(event.getClientId()), "error", nullToEmpty(event.getError())).increment();
+        meterRegistry.counter(totalCodeToTokensErrors, "realm", nullToEmpty(event.getRealmName()), "provider", provider, "client_id", nullToEmpty(event.getClientId()), "error", nullToEmpty(event.getError())).increment();
         //pushAsync();
     }
 
@@ -288,23 +274,6 @@ public final class PrometheusExporter {
         return identityProvider;
     }
 
-    /**
-     * Retrieve the real realm name in the event by id from the RealmProvider.
-     *
-     * @param realmId Id of Realm
-     * @param realmProvider RealmProvider instance
-     * @return Realm name
-     */
-    private String getRealmName(String realmId, RealmProvider realmProvider) {
-        RealmModel realm = null;
-        if (realmId != null) {
-             realm = realmProvider.getRealm(realmId);
-        }
-        if (realm != null) {
-            return realm.getName();
-        }
-        return null;
-    }
     /**
      * Write the Prometheus formatted values of all counters and
      * gauges to the stream
