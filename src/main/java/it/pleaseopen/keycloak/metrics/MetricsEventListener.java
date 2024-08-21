@@ -4,6 +4,7 @@ import org.jboss.logging.Logger;
 import org.keycloak.events.Event;
 import org.keycloak.events.EventListenerProvider;
 import org.keycloak.events.admin.AdminEvent;
+import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmProvider;
 
 public class MetricsEventListener implements EventListenerProvider {
@@ -12,15 +13,17 @@ public class MetricsEventListener implements EventListenerProvider {
 
     private final static Logger logger = Logger.getLogger(MetricsEventListener.class);
     private final RealmProvider realmProvider;
+    private final KeycloakSession session;
 
-    public MetricsEventListener(RealmProvider realmProvider) {
-        this.realmProvider = realmProvider;
+    public MetricsEventListener(KeycloakSession session) {
+        this.realmProvider = session.realms();
+        this.session = session;
     }
 
     @Override
     public void onEvent(Event event) {
         logEventDetails(event);
-
+        PrometheusExporter.instance().countSessions(event, session);
         switch (event.getType()) {
             case LOGIN:
                 PrometheusExporter.instance().recordLogin(event, realmProvider);

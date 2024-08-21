@@ -1,8 +1,12 @@
 package it.pleaseopen.keycloak.metrics;
 
+import io.micrometer.core.instrument.*;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Tag;
 import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.Supplier;
 import io.prometheus.client.exporter.BasicAuthHttpConnectionFactory;
 import io.prometheus.client.exporter.PushGateway;
 import io.prometheus.client.exporter.common.TextFormat;
@@ -12,6 +16,8 @@ import org.keycloak.events.Event;
 import org.keycloak.events.EventType;
 import org.keycloak.events.admin.AdminEvent;
 import org.keycloak.events.admin.OperationType;
+import org.keycloak.models.ClientModel;
+import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RealmProvider;
 
@@ -24,8 +30,13 @@ import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongSupplier;
 
 public final class PrometheusExporter {
 
@@ -56,6 +67,7 @@ public final class PrometheusExporter {
     String totalFailedClientLoginAttempts = "keycloak_failed_client_login_attempts";
     String totalCodeToTokens = "keycloak_code_to_tokens";
     String totalCodeToTokensErrors = "keycloak_code_to_tokens_errors";
+    String activeSessions = "keycloak_sessions_by_client";
 
     private PrometheusExporter() {
         // The metrics collector needs to be a singleton because requiring a
@@ -89,7 +101,7 @@ public final class PrometheusExporter {
     }
 
     public static synchronized PrometheusExporter instance() {
-        if (INSTANCE == null) {
+        if( INSTANCE == null){
             INSTANCE = new PrometheusExporter();
         }
         return INSTANCE;
@@ -147,6 +159,17 @@ public final class PrometheusExporter {
         //pushAsync();
     }
 
+    public void countSessions(final Event event, KeycloakSession session){
+        if(event.getClientId() == null){
+            return;
+        }
+        RealmModel realm = session.realms().getRealm(event.getRealmId());
+        ClientModel client = session.clients().getClientByClientId(realm, event.getClientId());
+        List<Tag> tags = new ArrayList<>();
+        tags.add(Tag.of("realm", nullToEmpty(getRealmName(event.getRealmId(), session.realms() )) ) );
+        tags.add(Tag.of("client_id", nullToEmpty(event.getClientId()) ));
+        meterRegistry.more().counter(activeSessions, tags, session, s -> s.sessions().getActiveUserSessions(realm, client));
+    }
     /**
      * Increase the number of currently logged in users
      *
