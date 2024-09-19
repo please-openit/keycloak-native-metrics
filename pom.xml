@@ -5,9 +5,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>keycloak-native-metrics-spi</artifactId>
-    <groupId>it.pleaseopen</groupId>
+    <groupId>please-open.it</groupId>
     <packaging>jar</packaging>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>25.0.0-SNAPSHOT</version>
 
     <properties>
         <java.version>21</java.version>
@@ -15,8 +15,8 @@
         <prometheus.version>0.16.0</prometheus.version>
         <quarkus-resteasy.version>3.8.5</quarkus-resteasy.version>
         <version.compiler.maven.plugin>3.5.1</version.compiler.maven.plugin>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
     </properties>
 
     <dependencies>
@@ -76,7 +76,7 @@
                 <filtering>true</filtering>
             </resource>
         </resources>
-        <finalName>${project.artifactId}-${project.version}</finalName>
+        <finalName>${project.groupId}-${project.artifactId}-${project.version}-jar-with-dependencies</finalName>
         <plugins>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>

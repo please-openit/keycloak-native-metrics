@@ -10,15 +10,13 @@ import org.keycloak.events.EventListenerProvider;
 import org.keycloak.events.EventType;
 import org.keycloak.events.admin.AdminEvent;
 import org.keycloak.events.admin.OperationType;
-import org.keycloak.models.ClientModel;
-import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.RealmModel;
-import org.keycloak.models.RealmProvider;
+import org.keycloak.models.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class MetricsEventListener implements EventListenerProvider {
     public final static String ID = "native-metrics-listener";
@@ -57,8 +55,6 @@ public class MetricsEventListener implements EventListenerProvider {
         }
     }
 
-
-
     public void countSessions(final Event event){
         if(event.getClientId() == null){
             return;
@@ -68,15 +64,21 @@ public class MetricsEventListener implements EventListenerProvider {
         List<Tag> tags = new ArrayList<>();
         tags.add(Tag.of("realm", nullToEmpty(getRealmName(event.getRealmId(), session.realms() )) ) );
         tags.add(Tag.of("client_id", nullToEmpty(event.getClientId()) ));
+        System.out.println("session status : "+session.isClosed());
         io.micrometer.core.instrument.Gauge.builder(activeSessions, session, s -> s.sessions().getActiveUserSessions(realm, client))
             .strongReference(true)//Add strong reference
             .tags(tags)
             .register(meterRegistry);
+        System.out.println("session status : "+session.isClosed());
 
-        io.micrometer.core.instrument.Gauge.builder(activeOfflineSessions, session, s -> s.sessions().getOfflineSessionsCount(realm, client))
+        /*io.micrometer.core.instrument.Gauge.builder(activeOfflineSessions, session, s -> s.sessions().getOfflineSessionsCount(realm, client))
             .strongReference(true)//Add strong reference
             .tags(tags)
             .register(meterRegistry);
+
+         */
+        System.out.println("session status : "+session.isClosed());
+
     }
 
     private String getRealmName(String realmId, RealmProvider realmProvider) {
